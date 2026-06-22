@@ -15,10 +15,15 @@ def test_health():
 def test_predict_flight():
     print("\n🔍 Testing /predict_flight endpoint...")
     payload = {
-        "origin": "NYC",
-        "destination": "LAX", 
-        "date": "2024-06-15",
-        "airline": "Delta"
+     "flightType": "economic",
+     "agency": "Rainbow",
+     "from": "Florianopolis (SC)",
+     "to": "Sao Paulo (SP)",
+     "distance": 500.5,
+     "time": 1.5,
+     "day": 15,
+     "month": 6,
+     "weekday": 3
     }
     response = requests.post(f"{BASE_URL}/predict_flight", json=payload)
     print(f"Status Code: {response.status_code}")
@@ -27,10 +32,14 @@ def test_predict_flight():
 def test_classify_gender():
     print("\n🔍 Testing /classify_gender endpoint...")
     payload = {
-        "name": "Alex",
-        "purchase_history": ["handbag", "laptop", "book"],
-        "age": 28
+     "first_name": "Alex",
+     "company": "TechCorp",
+     "name_length": 4,
+     "first_letter": "A",
+     "last_letter": "x",
+     "age": 28   
     }
+
     response = requests.post(f"{BASE_URL}/classify_gender", json=payload)
     print(f"Status Code: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2)}\n")
