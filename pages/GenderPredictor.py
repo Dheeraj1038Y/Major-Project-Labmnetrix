@@ -193,7 +193,7 @@ with right:
 
             emoji = {"male": "🔵", "female": "🟣", "none": "🟢"}.get(gender.lower(), "⚪")
             st.markdown(f"### {emoji} Predicted: **{gender.title()}**")
-            st.metric("Confidence", f"{confidence*100:.1f}%")
+           st.metric("Confidence", f"{(confidence or 0)*100:.1f}%")
 
             if confidence >= 0.8:
                 st.info("🎯 High confidence prediction")
