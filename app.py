@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import os
 from recommender import get_hotel_recommendations
+
 # ------------------------------------------------------------
 # MODEL LOADING (Startup - Load Once)
 # ------------------------------------------------------------
@@ -157,7 +158,7 @@ def classify_gender():
 
 
 # ------------------------------------------------------------
-# ENDPOINT 3: /recommend_hotels
+# ENDPOINT 3: /recommend_hotels [FIXED - BULLETPROOF VERSION]
 # Purpose: Recommend hotels based on user preferences
 # ------------------------------------------------------------
 @app.route('/recommend_hotels', methods=['POST'])
@@ -174,11 +175,32 @@ def recommend_hotels():
     }
     """
     try:
-        # Get the incoming JSON data from the request
-        data = request.get_json()
+        # 🔧 FIX #1: Aggressive JSON parsing (ignores missing Content-Type header)
+        # force=True: Parse even if Content-Type is wrong
+        # silent=True: Return None instead of throwing error if JSON is malformed
+        data = request.get_json(force=True, silent=True)
         
-        # Call Member 2's Flask-friendly wrapper! 
-        # (It automatically reads hotels.csv and does the math)
+        # 🐛 DEBUG LOGGING: Print exactly what Member 2 is sending
+        print(f"DEBUG - Incoming Recommender Data: {data}")
+        print(f"DEBUG - Request Content-Type: {request.content_type}")
+        print(f"DEBUG - Raw Request Data: {request.data}")
+        
+        # 🔧 FIX #2: Validate that we actually received JSON data
+        if data is None or data == {}:
+            return jsonify({
+                "status": "error",
+                "message": "Empty JSON payload or missing Content-Type header. Member 2: Check your requests.post() call!",
+                "debugging_tips": [
+                    "Ensure you're sending JSON: requests.post(url, json=payload)",
+                    "Or manually set header: headers={'Content-Type': 'application/json'}",
+                    "Verify payload is not empty before sending"
+                ],
+                "received_content_type": request.content_type,
+                "received_raw_data": str(request.data)
+            }), 400
+        
+        # 🔧 FIX #3: NO GHOST VARIABLES - We're using the actual request data
+        # Call Member 2's Flask-friendly wrapper with the REAL incoming data
         recommendations = get_hotel_recommendations(data, top_n=5)
         
         # Return successful response
@@ -186,19 +208,26 @@ def recommend_hotels():
             "status": "success",
             "recommendations": recommendations,
             "model_version": "production_v1",
-            "input_received": data
+            "input_received": data  # Echo back what was actually used
         }
         
         return jsonify(response), 200
     
     except Exception as e:
         # Return detailed error for frontend debugging
+        # Re-parse in case original parsing failed mid-way
+        debug_data = request.get_json(force=True, silent=True)
+        
         return jsonify({
             "status": "error",
             "message": f"Recommendation failed: {str(e)}",
             "error_type": type(e).__name__,
-            "input_received": request.get_json()
+            "input_received": debug_data,
+            "full_error": str(e),
+            "debugging_hint": "Check that all required fields are present in your JSON payload"
         }), 400
+
+
 # ------------------------------------------------------------
 # HEALTH CHECK ENDPOINT
 # Purpose: Let frontend/DevOps check if the API is alive
@@ -231,7 +260,7 @@ if __name__ == '__main__':
     print("📍 Endpoints available:")
     print("   - POST http://localhost:8000/predict_flight (PRODUCTION)")
     print("   - POST http://localhost:8000/classify_gender (PRODUCTION)")
-    print("   - POST http://localhost:8000/recommend_hotels (MOCK)")
+    print("   - POST http://localhost:8000/recommend_hotels (PRODUCTION - FIXED)")
     print("   - GET  http://localhost:8000/health")
     print("\n💡 Press CTRL+C to stop the server\n")
     
